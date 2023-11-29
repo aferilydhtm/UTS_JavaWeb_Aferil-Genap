@@ -13,16 +13,16 @@
                 </tr>
             </thead>
             <tbody>
-                <tr th:each="teachers : ${teacher}">
+                <tr th:each="teacher : ${teachers}">
                     <td th:text="${teacher.nip}"></td>
                     <td th:text="${teacher.fullName}"></td>
                     <td th:text="${teacher.email}"></td>
                     <td th:text="${teacher.phoneNumber}"></td>
-                    <td><a href="#">Edit</a></td>
-                    <td><a href="#">Delete</a></td>
+                    <td><a th:href="@{/edit/{nip}(nip=${teacher.nip})}">Edit</a></td>
+                    <td><a th:href="@{/teachers/{nip}/delete (nip=${teacher.nip})}">Delete</a></td>
                 </tr>
             </tbody>
         </table>
     </div>
-    <p><a href="#">Add a new student</a></p>
+    <p><a href="/signup">Add a new Teacher</a></p>
 </div>

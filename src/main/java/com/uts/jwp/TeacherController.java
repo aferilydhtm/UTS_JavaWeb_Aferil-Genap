@@ -1,13 +1,19 @@
 package com.uts.jwp;
 
+// import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.hibernate.validator.internal.constraintvalidators.bv.EmailValidator;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.validation.BindingResult;
+import org.springframework.validation.ObjectError;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -18,84 +24,184 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.uts.jwp.domain.Teacher;
 
-@RestController
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Email;
+import lombok.extern.slf4j.Slf4j;
+
+@Controller
+@Slf4j
 public class TeacherController {
 
     // Aferil Yudhatama
 	// 2112500786
     // UTS Java Web Programming (Genap)
-
-    /* Codingan 1 ===================================================================*/
-	// @GetMapping("/teachers")
-	// public List<Teacher> getTeachers(){
-
-	// 	List<Teacher> teacherList = new ArrayList<>();
-
-	// 	Teacher teacher1 = new Teacher();
-	// 	teacher1.setNip("12345");
-	// 	teacher1.setFullName("Soekarno");
-	// 	teacher1.setEmail(" soekarno@gmail.com");
-	// 	teacher1.setPhoneNumber("0811111111");
-
-
-	// 	Teacher teacher2 = new Teacher();
-	// 	teacher2.setNip("67890");
-	// 	teacher2.setFullName("Mohammad Hatta");
-	// 	teacher2.setEmail(" hatta.muhammad@gmail.com");
-	// 	teacher2.setPhoneNumber(" 0812222222");
-		
-
-	// 	Teacher teacher3 = new Teacher();
-	// 	teacher3.setNip("212121");
-	// 	teacher3.setFullName("Adam Malik");
-	// 	teacher3.setEmail("malik.adam@gmail.com");
-	// 	teacher3.setPhoneNumber("0855555555");
-
-    // 	Teacher teacher4 = new Teacher();
-	// 	teacher4.setNip("2112500786");
-	// 	teacher4.setFullName("AferilYudhatama");
-	// 	teacher4.setEmail("aferilyudhatama04@gmail.com");
-	// 	teacher4.setPhoneNumber("08974835297");
-
-	// 	teacherList.addAll(List.of(teacher1, teacher2, teacher3, teacher4));
-	// 	return teacherList;
-    // }
-
-    /* Codingan 2 ======================================================================== */
     public static Map<String, Teacher> teacherMap = new HashMap<>();
 
     @GetMapping("/teachers")
-	public List<Teacher> getTeachers(){
-		return teacherMap.values().stream().toList();
-	}
+    public String getTeachers(Model model) {
+        model.addAttribute("students", fetchTeachers());
+        return "index";
+    }
+
+	@GetMapping("/signup")
+    public String showSignUpForm(Teacher teacher) {
+        return "addTeachers";
+    }
 
     @PostMapping("/teachers")
-	public ResponseEntity<String> addTeacher(@RequestBody Teacher teacher){
-		teacherMap.put(teacher.getNip(), teacher);
-		Teacher savedTeacher = teacherMap.get(teacher.getNip());
-		return new ResponseEntity<>("Teacher wit NIP: " + savedTeacher.getNip() + " has been created", HttpStatus.OK);
-	}
+    public String addTeacher(@Valid Teacher teacher, BindingResult bindingResult, Model model) {
 
-    @GetMapping(value = "/teachers/{nip}")
-	public ResponseEntity<Teacher> findTeacher(@PathVariable("nip") String nip){
-		final Teacher teacher = teacherMap.get(nip);
-		return new ResponseEntity<>(teacher, HttpStatus.OK);
-	}
+        // Validate NIP
+        String errorNIP = validateNIP(teacher.getNip());
+        if (errorNIP != null) {
+            ObjectError error = new ObjectError("globalError", errorNIP);
+            bindingResult.addError(error);
+        }
 
-    @PutMapping(value = "/teachers/{nip}")
-	public ResponseEntity<String> updateTeacher(@PathVariable("nip") String nip, @RequestBody Teacher teacher){
-		final Teacher teacherToBeUpdated = teacherMap.get(teacher.getNip());
-		teacherToBeUpdated.setFullName(teacher.getFullName());
-		teacherToBeUpdated.setEmail(teacher.getEmail());
-		teacherToBeUpdated.setPhoneNumber(teacher.getPhoneNumber()); 
+        // Validate Email
+        String errorEmail = validateEmail(teacher.getEmail());
+        if (errorEmail != null) {
+            ObjectError error = new ObjectError("globalError", errorEmail);
+            bindingResult.addError(error);
+        }
 
-		teacherMap.put(teacher.getNip(), teacherToBeUpdated);
-		return new ResponseEntity<String>("Teacher with NIP: " + teacherToBeUpdated.getNip() + " has been updated", HttpStatus.OK);
-	}
+        // Validate Phone Number
+        String errorPhoneNumber = validatePhoneNumber(teacher.getPhoneNumber());
+        if (errorPhoneNumber != null) {
+            ObjectError error = new ObjectError("globalError", errorPhoneNumber);
+            bindingResult.addError(error);
+        }
 
-    @DeleteMapping(value = "/teachers/{nip}")
-	public ResponseEntity<Void> deleteTeacher(@PathVariable("nip") String nip){
-		teacherMap.remove(nip);
-		return new ResponseEntity<Void>(HttpStatus.OK);
-	}
+        // Prevent duplicate data
+        String duplicateDataError = checkDuplicateData(teacher);
+        if (duplicateDataError != null) {
+            ObjectError error = new ObjectError("globalError", duplicateDataError);
+            bindingResult.addError(error);
+        }
+
+        log.info("bindingResult {}", bindingResult);
+
+        if (bindingResult.hasErrors()) {
+            return "addTeachers";
+        }
+
+        String nip = teacher.getNip();
+        boolean exists = teacherMap.values().stream()
+                .anyMatch(data -> nip.equals(data.getNip()));
+
+        if (exists) {
+            throw new IllegalArgumentException("Teacher with ID:" + nip + " is already exist");
+        }
+
+        teacherMap.put(nip, teacher);
+        model.addAttribute("teachers", fetchTeachers());
+        return "index";
+    }
+
+    private String validateNIP(String nip) {
+        // Check if NIP starts with "LCT" and ends with 10 digits
+        if (!nip.startsWith("LCT") || !nip.substring(3).matches("\\d{10}")) {
+            return "NIP must start with 'LCT' and be followed by 10 digits";
+        }
+        return null;
+    }
+
+    private String validateEmail(String email) {
+        // Add your email validation logic here
+        // Return an error message if validation fails, otherwise return null
+        return null; // Placeholder, implement your validation logic
+    }
+
+    private String validatePhoneNumber(String phoneNumber) {
+        // Add your phone number validation logic here
+        // Return an error message if validation fails, otherwise return null
+        return null; // Placeholder, implement your validation logic
+    }
+
+    private String checkDuplicateData(Teacher teacher) {
+        // Check if the teacher already exists in the teacherMap
+        boolean exists = teacherMap.values().stream()
+                .anyMatch(data ->
+                        teacher.getEmail().equals(data.getEmail()) ||
+                        teacher.getNip().equals(data.getNip()) ||
+                        teacher.getPhoneNumber().equals(data.getPhoneNumber())
+                );
+
+        if (exists) {
+            return "Teacher with the same NIP, Email, or Phone Number already exists";
+        }
+
+        return null;
+    }
+
+	@GetMapping(value = "/teachers/{nip}")
+    public ResponseEntity<Teacher> findTeacher(@PathVariable("nip") String nip) {
+        final Teacher teacher = teacherMap.get(nip);
+        return new ResponseEntity<>(teacher, HttpStatus.OK);
+    }
+
+	private static List<Teacher> fetchTeachers() {
+        return teacherMap.values().stream().toList();
+    }
+
+	@PostMapping(value = "/teachers/{nip}")
+    public String updateTeacher(@PathVariable("nip") String nip,
+                                Teacher teacher,
+                                BindingResult result, Model model) {
+        final Teacher teacherToBeUpdated = teacherMap.get(teacher.getNip());
+        teacherToBeUpdated.setFullName(teacher.getFullName());
+        teacherToBeUpdated.setEmail(teacher.getEmail());
+        teacherToBeUpdated.setPhoneNumber(teacher.getPhoneNumber());
+        teacherMap.put(teacher.getNip(), teacherToBeUpdated);
+
+        model.addAttribute("teachers", fetchTeachers());
+        return "redirect:/teachers";
+    }
+	
+	@GetMapping("/edit/{nip}")
+    public String showUpdateForm(@PathVariable("nip") String nip, Model model) {
+        final Teacher teacherToBeUpdated = teacherMap.get(nip);
+        if (teacherToBeUpdated == null) {
+            throw new IllegalArgumentException("Teacher with NIP:" + nip + " is not found");
+        }
+        model.addAttribute("teacher", teacherToBeUpdated);
+        return "editTeachers";
+    }
+
+	@GetMapping(value = "/teachers/{nip}/delete")
+    public String deleteTeacher(@PathVariable("nip") String nip) {
+        teacherMap.remove(nip);
+        return "redirect:/teachers";
+    }
+
+	// @PostMapping(value = "/teachers/{nip}")
+    // public String updateTeacher(@PathVariable("nip") String nip,
+    //         Teacher teacher,
+    //         BindingResult result, Model model) {
+    //     final Teacher teacherToBeUpdated = teacherMap.get(teacher.getNip());
+    //     teacherToBeUpdated.setFullName(teacher.getFullName());
+    //     teacherToBeUpdated.setEmail(teacher.getEmail());
+    //     teacherToBeUpdated.setPhoneNumber(teacher.getPhoneNumber());
+    //     teacherMap.put(teacher.getNip(), teacherToBeUpdated);
+
+    //     model.addAttribute("teachers", fetchTeachers());
+    //     return "redirect:/teachers";
+    // }
+
+    // @GetMapping("/edit/{nip}")
+    // public String showUpdateForm(@PathVariable("nip") String nip, Model model) {
+    //     final Teacher teacherToBeUpdated = teacherMap.get(nip);
+    //     if (teacherToBeUpdated == null) {
+    //         throw new IllegalArgumentException("teacher with nim:" + nip + "is not found");
+    //     }
+    //     model.addAttribute("teacher", teacherToBeUpdated);
+    //     return "editTeachers";
+    // }
+
+    // @GetMapping(value = "/teachers/{nip}/delete")
+    // public String deleteTeacher(@PathVariable("nip") String nip) {
+    //     teacherMap.remove(nip);
+    //     return "redirect:/students";
+    // }
+
 }

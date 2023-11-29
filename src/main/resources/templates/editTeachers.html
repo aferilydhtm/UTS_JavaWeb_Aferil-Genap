@@ -1,0 +1,28 @@
+<form action="#" th:action="@{/teachers/{nip}(nip=${teacher.nip})}" th:object="${teacher}" method="post">
+    <table>
+        <tr>
+            <td><label for="nip">NIP</label></td>
+            <td> <input type="text" th:field="*{nip}" id="nip" placeholder="NIP" readonly></td>
+        </tr>
+
+        <tr>
+            <td><label for="fullName">Full name</label></td>
+            <td><input type="text" th:field="*{fullName}" id="fullName" placeholder="Full name"></td>
+        </tr>
+
+        <tr>
+            <td> <label for="email">Email</label></td>
+            <td> <input type="email" th:field="*{email}" id="email" placeholder="Email"></td>
+        </tr>
+
+        <tr>
+            <td> <label for="phoneNumber">Phone Number</label></td>
+            <td> <input type="text" th:field="*{phoneNumber}" id="phoneNumber" placeholder="phone Number"></td>
+        </tr>
+
+        <tr>
+            <td> <input type="submit" value="Update student"> </td>
+        </tr>
+
+    </table>
+</form>

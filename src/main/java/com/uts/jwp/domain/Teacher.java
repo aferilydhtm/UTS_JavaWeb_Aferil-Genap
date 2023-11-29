@@ -1,9 +1,29 @@
 package com.uts.jwp.domain;
 
+import io.micrometer.common.lang.NonNull;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
+
 public class Teacher {
+
+    @NotBlank(message = "nip is required")
+    // @Pattern(regexp = "LCT", message = "must be LCT")
     private String nip;
+
+    @NotBlank(message = "full name is required")
+    @Size(min = 3, max = 50)
     private String fullName;
+
+    @Email(message = "email must @ and is required")
+    // @Pattern(regexp = "@gmail.com", message = "email must @ and is required")
+    @NotBlank(message = "email is required")
     private String email;
+
+    @NotBlank(message = "phone number is required")
     private String phoneNumber;
 
     public Teacher(){
