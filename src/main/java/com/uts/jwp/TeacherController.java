@@ -144,17 +144,42 @@ public class TeacherController {
         return teacherMap.values().stream().toList();
     }
 
-	@PostMapping(value = "/teachers/{nip}")
+	// @PostMapping(value = "/teachers/{nip}")
+    // public String updateTeacher(@PathVariable("nip") String nip,
+    //                             Teacher teacher,
+    //                             BindingResult result, Model model) {
+    //     final Teacher teacherToBeUpdated = teacherMap.get(teacher.getNip());
+    //     teacherToBeUpdated.setFullName(teacher.getFullName());
+    //     teacherToBeUpdated.setEmail(teacher.getEmail());
+    //     teacherToBeUpdated.setPhoneNumber(teacher.getPhoneNumber());
+    //     teacherMap.put(teacher.getNip(), teacherToBeUpdated);
+
+    //     model.addAttribute("teachers", fetchTeachers());
+    //     return "redirect:/teachers";
+    // }
+
+    @PostMapping(value = "/teachers/{nip}")
     public String updateTeacher(@PathVariable("nip") String nip,
-                                Teacher teacher,
-                                BindingResult result, Model model) {
-        final Teacher teacherToBeUpdated = teacherMap.get(teacher.getNip());
+                            @Valid Teacher teacher,
+                            BindingResult result, Model model) {
+        if (result.hasErrors()) {
+            // If there are validation errors, return to the edit form
+            return "editTeachers";
+        }
+
+        final Teacher teacherToBeUpdated = teacherMap.get(nip);
+        if (teacherToBeUpdated == null) {
+            throw new IllegalArgumentException("Teacher with NIP:" + nip + " is not found");
+        }
+
+        // Update teacher information
         teacherToBeUpdated.setFullName(teacher.getFullName());
         teacherToBeUpdated.setEmail(teacher.getEmail());
         teacherToBeUpdated.setPhoneNumber(teacher.getPhoneNumber());
-        teacherMap.put(teacher.getNip(), teacherToBeUpdated);
+        teacherMap.put(nip, teacherToBeUpdated);
 
         model.addAttribute("teachers", fetchTeachers());
+        // Redirect to the teachers list page
         return "redirect:/teachers";
     }
 	
