@@ -134,6 +134,7 @@ public class TeacherController {
         return null;
     }
 
+    // Show Teacher Data===========================================================
 	@GetMapping(value = "/teachers/{nip}")
     public ResponseEntity<Teacher> findTeacher(@PathVariable("nip") String nip) {
         final Teacher teacher = teacherMap.get(nip);
@@ -143,24 +144,74 @@ public class TeacherController {
 	private static List<Teacher> fetchTeachers() {
         return teacherMap.values().stream().toList();
     }
+    // =============================================================================
 
-	@PostMapping(value = "/teachers/{nip}")
+	// @PostMapping(value = "/teachers/{nip}")
+    // public String updateTeacher(@PathVariable("nip") String nip,
+    //                             Teacher teacher,
+    //                             BindingResult result, Model model) {
+    //     final Teacher teacherToBeUpdated = teacherMap.get(teacher.getNip());
+    //     teacherToBeUpdated.setFullName(teacher.getFullName());
+    //     teacherToBeUpdated.setEmail(teacher.getEmail());
+    //     teacherToBeUpdated.setPhoneNumber(teacher.getPhoneNumber());
+    //     teacherMap.put(teacher.getNip(), teacherToBeUpdated);
+
+    //     model.addAttribute("teachers", fetchTeachers());
+    //     return "redirect:/teachers";
+    // }
+
+    // Edit Teachers Data==============================================
+    @PostMapping(value = "/teachers/{nip}")
     public String updateTeacher(@PathVariable("nip") String nip,
-                                Teacher teacher,
+                                @Valid Teacher updatedTeacher,
                                 BindingResult result, Model model) {
-        final Teacher teacherToBeUpdated = teacherMap.get(teacher.getNip());
-        teacherToBeUpdated.setFullName(teacher.getFullName());
-        teacherToBeUpdated.setEmail(teacher.getEmail());
-        teacherToBeUpdated.setPhoneNumber(teacher.getPhoneNumber());
-        teacherMap.put(teacher.getNip(), teacherToBeUpdated);
+        if (result.hasErrors()) {
+            // If there are validation errors, return to the edit form
+            return "editTeachers";
+        }
+
+        final Teacher teacherToBeUpdated = teacherMap.get(nip);
+        if (teacherToBeUpdated == null) {
+            throw new IllegalArgumentException("Teacher with NIP:" + nip + " is not found");
+        }
+
+        // Check for duplicate data
+        if (!isUpdateValid(updatedTeacher, teacherToBeUpdated)) {
+            ObjectError error = new ObjectError("globalError", "Edited data is the same as existing data");
+            result.addError(error);
+            return "editTeachers";
+        }
+
+        // Update teacher information
+        teacherToBeUpdated.setFullName(updatedTeacher.getFullName());
+        teacherToBeUpdated.setEmail(updatedTeacher.getEmail());
+        teacherToBeUpdated.setPhoneNumber(updatedTeacher.getPhoneNumber());
+        teacherMap.put(nip, teacherToBeUpdated);
 
         model.addAttribute("teachers", fetchTeachers());
+        // Redirect to the teachers list page
         return "redirect:/teachers";
+    }
+
+    private boolean isUpdateValid(Teacher updatedTeacher, Teacher existingTeacher) {
+        // Check if edited data is the same as existing data
+        return !updatedTeacher.equals(existingTeacher) &&
+            !isDuplicateData(updatedTeacher);
+    }
+
+    private boolean isDuplicateData(Teacher teacher) {
+        // Check if the teacher already exists in the teacherMap
+        return teacherMap.values().stream()
+                .anyMatch(data ->
+                        teacher.getEmail().equals(data.getEmail()) ||
+                        teacher.getFullName().equals(data.getFullName()) ||
+                        teacher.getPhoneNumber().equals(data.getPhoneNumber())
+                );
     }
 
     // @PostMapping(value = "/teachers/{nip}")
     // public String updateTeacher(@PathVariable("nip") String nip,
-    //                         @Valid Teacher teacher,
+    //                         @Valid Teacher updatedTeacher,
     //                         BindingResult result, Model model) {
     //     if (result.hasErrors()) {
     //         // If there are validation errors, return to the edit form
@@ -172,15 +223,26 @@ public class TeacherController {
     //         throw new IllegalArgumentException("Teacher with NIP:" + nip + " is not found");
     //     }
 
+    //     // Check for duplicate data
+    //     if (!isUpdateValid(updatedTeacher, teacherToBeUpdated)) {
+    //         ObjectError error = new ObjectError("globalError", "Updated data is the same as existing data");
+    //         result.addError(error);
+    //         return "editTeachers";
+    //     }
+
     //     // Update teacher information
-    //     teacherToBeUpdated.setFullName(teacher.getFullName());
-    //     teacherToBeUpdated.setEmail(teacher.getEmail());
-    //     teacherToBeUpdated.setPhoneNumber(teacher.getPhoneNumber());
+    //     teacherToBeUpdated.setFullName(updatedTeacher.getFullName());
+    //     teacherToBeUpdated.setEmail(updatedTeacher.getEmail());
+    //     teacherToBeUpdated.setPhoneNumber(updatedTeacher.getPhoneNumber());
     //     teacherMap.put(nip, teacherToBeUpdated);
 
     //     model.addAttribute("teachers", fetchTeachers());
     //     // Redirect to the teachers list page
     //     return "redirect:/teachers";
+    // }
+
+    // private boolean isUpdateValid(Teacher updatedTeacher, Teacher existingTeacher) {
+    //     return !updatedTeacher.equals(existingTeacher);
     // }
 	
 	@GetMapping("/edit/{nip}")
@@ -192,7 +254,9 @@ public class TeacherController {
         model.addAttribute("teacher", teacherToBeUpdated);
         return "editTeachers";
     }
+    // ========================================================================================
 
+    // Delete Teacher Data===================================================================
 	@GetMapping(value = "/teachers/{nip}/delete")
     public String deleteTeacher(@PathVariable("nip") String nip) {
         teacherMap.remove(nip);
