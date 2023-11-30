@@ -37,12 +37,15 @@ public class TeacherController {
     // UTS Java Web Programming (Genap)
     public static Map<String, Teacher> teacherMap = new HashMap<>();
 
+    // Menampilkan Halaman Index=======================================
     @GetMapping("/teachers")
     public String getTeachers(Model model) {
         model.addAttribute("teachers", fetchTeachers());
         return "index";
     }
+    // ================================================================
 
+    // Menampilkan Form tambah data dan fungsi tambah=====================================
 	@GetMapping("/signup")
     public String showSignUpForm(Teacher teacher) {
         return "addTeachers";
@@ -134,6 +137,15 @@ public class TeacherController {
         return null;
     }
 
+    @GetMapping("/cancelAdd")
+    public String cancelAddTeacher() {
+        // You can add any additional logic here if needed
+        return "redirect:/teachers";
+    }
+    // ===========================================================================
+
+
+
     // Show Teacher Data===========================================================
 	@GetMapping(value = "/teachers/{nip}")
     public ResponseEntity<Teacher> findTeacher(@PathVariable("nip") String nip) {
@@ -146,19 +158,7 @@ public class TeacherController {
     }
     // =============================================================================
 
-	// @PostMapping(value = "/teachers/{nip}")
-    // public String updateTeacher(@PathVariable("nip") String nip,
-    //                             Teacher teacher,
-    //                             BindingResult result, Model model) {
-    //     final Teacher teacherToBeUpdated = teacherMap.get(teacher.getNip());
-    //     teacherToBeUpdated.setFullName(teacher.getFullName());
-    //     teacherToBeUpdated.setEmail(teacher.getEmail());
-    //     teacherToBeUpdated.setPhoneNumber(teacher.getPhoneNumber());
-    //     teacherMap.put(teacher.getNip(), teacherToBeUpdated);
 
-    //     model.addAttribute("teachers", fetchTeachers());
-    //     return "redirect:/teachers";
-    // }
 
     // Edit Teachers Data==============================================
     @PostMapping(value = "/teachers/{nip}")
@@ -208,42 +208,6 @@ public class TeacherController {
                         teacher.getPhoneNumber().equals(data.getPhoneNumber())
                 );
     }
-
-    // @PostMapping(value = "/teachers/{nip}")
-    // public String updateTeacher(@PathVariable("nip") String nip,
-    //                         @Valid Teacher updatedTeacher,
-    //                         BindingResult result, Model model) {
-    //     if (result.hasErrors()) {
-    //         // If there are validation errors, return to the edit form
-    //         return "editTeachers";
-    //     }
-
-    //     final Teacher teacherToBeUpdated = teacherMap.get(nip);
-    //     if (teacherToBeUpdated == null) {
-    //         throw new IllegalArgumentException("Teacher with NIP:" + nip + " is not found");
-    //     }
-
-    //     // Check for duplicate data
-    //     if (!isUpdateValid(updatedTeacher, teacherToBeUpdated)) {
-    //         ObjectError error = new ObjectError("globalError", "Updated data is the same as existing data");
-    //         result.addError(error);
-    //         return "editTeachers";
-    //     }
-
-    //     // Update teacher information
-    //     teacherToBeUpdated.setFullName(updatedTeacher.getFullName());
-    //     teacherToBeUpdated.setEmail(updatedTeacher.getEmail());
-    //     teacherToBeUpdated.setPhoneNumber(updatedTeacher.getPhoneNumber());
-    //     teacherMap.put(nip, teacherToBeUpdated);
-
-    //     model.addAttribute("teachers", fetchTeachers());
-    //     // Redirect to the teachers list page
-    //     return "redirect:/teachers";
-    // }
-
-    // private boolean isUpdateValid(Teacher updatedTeacher, Teacher existingTeacher) {
-    //     return !updatedTeacher.equals(existingTeacher);
-    // }
 	
 	@GetMapping("/edit/{nip}")
     public String showUpdateForm(@PathVariable("nip") String nip, Model model) {
@@ -254,7 +218,15 @@ public class TeacherController {
         model.addAttribute("teacher", teacherToBeUpdated);
         return "editTeachers";
     }
+
+    @GetMapping("/cancelEdit/{nip}")
+    public String cancelEditTeacher(@PathVariable("nip") String nip) {
+        // You can add any additional logic here if needed
+        return "redirect:/teachers";
+    }
     // ========================================================================================
+
+
 
     // Delete Teacher Data===================================================================
 	@GetMapping(value = "/teachers/{nip}/delete")

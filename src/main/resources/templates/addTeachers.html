@@ -34,6 +34,10 @@
         </tr>
 
         <tr>
+            <td> <a class="btn" href="/cancelAdd">cancel</a></td>
+        </tr>
+
+        <tr>
             <div th:if="${#fields.hasErrors('global')}">
                 <h3>errors:</h3>
                 <p th:each="err : ${#fields.errors('global')}" th:text="${err}" class="error" />
